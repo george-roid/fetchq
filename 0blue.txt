@@ -1,5 +1,24 @@
 window.stopZeroCounter = false; // Set to true to stop at any time
 
+// Create or reuse a textarea for live results
+let textarea = document.getElementById('zeroGuyLinksTextarea');
+if (!textarea) {
+    textarea = document.createElement('textarea');
+    textarea.id = 'zeroGuyLinksTextarea';
+    textarea.style.position = 'fixed';
+    textarea.style.bottom = '10px';
+    textarea.style.left = '10px';
+    textarea.style.width = '400px';
+    textarea.style.height = '200px';
+    textarea.style.zIndex = 99999;
+    textarea.style.background = '#fff';
+    textarea.style.fontSize = '12px';
+    textarea.style.border = '2px solid #333';
+    textarea.style.padding = '8px';
+    textarea.readOnly = false;
+    document.body.appendChild(textarea);
+}
+
 async function collectZeroGuyLinksLive(maxLinks = 1000, scrollDelay = 1500) {
     let zeroGuyLinks = new Set();
     let lastHeight = 0;
@@ -10,7 +29,6 @@ async function collectZeroGuyLinksLive(maxLinks = 1000, scrollDelay = 1500) {
     while (zeroGuyLinks.size < maxLinks && attemptsWithoutNew < 10 && !window.stopZeroCounter) {
         let foundThisRound = 0;
 
-        // Find all .ibar-opcounters on the page
         let spans = Array.from(document.querySelectorAll('span.ibar-opcounters'));
         spans.forEach(span => {
             let guyA = span.querySelector('a[href*="#guys"]');
@@ -26,13 +44,15 @@ async function collectZeroGuyLinksLive(maxLinks = 1000, scrollDelay = 1500) {
             }
         });
 
+        // Update textarea live
+        textarea.value = Array.from(zeroGuyLinks).join('\n');
+
         if (foundThisRound > 0) {
             console.log(`[${zeroGuyLinks.size}] links collected so far... (+${foundThisRound} new)`);
         } else {
             console.log(`[${zeroGuyLinks.size}] links collected so far...`);
         }
 
-        // Scroll and wait
         window.scrollTo(0, document.body.scrollHeight);
         await new Promise(res => setTimeout(res, scrollDelay));
 
@@ -47,7 +67,8 @@ async function collectZeroGuyLinksLive(maxLinks = 1000, scrollDelay = 1500) {
 
     let result = Array.from(zeroGuyLinks).slice(0, maxLinks);
     window.latestZeroGuyLinks = result;
-    console.log(`Done! Collected ${result.length} links. To copy: copy(window.latestZeroGuyLinks.join("\\n"))`);
+    textarea.value = result.join('\n'); // Final update
+    console.log(`Done! Collected ${result.length} links. You can copy them from the textarea on the page.`);
     return result;
 }
 
