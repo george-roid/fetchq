@@ -18,7 +18,7 @@ if (!textarea) {
     document.body.appendChild(textarea);
 }
 
-async function collectAnonZeroGirlLinks(maxLinks = 1000, scrollDelay = 1500) {
+async function collectAnonZeroGirlLinks(maxLinks = 1000, scrollDelay = 300) {
     let anonGirlLinks = new Set();
     let lastHeight = 0;
     let attemptsWithoutNew = 0;
@@ -84,4 +84,4 @@ async function collectAnonZeroGirlLinks(maxLinks = 1000, scrollDelay = 1500) {
 }
 
 // Usage:
-collectAnonZeroGirlLinks(1000, 1500);
+collectAnonZeroGirlLinks(1000, 300);
