@@ -1,0 +1,64 @@
+window.stopZeroCounter = false; // Set to true to stop at any time
+
+let textarea = document.getElementById('zeroGuyLinksTextarea');
+if (!textarea) {
+    textarea = document.createElement('textarea');
+    textarea.id = 'zeroGuyLinksTextarea';
+    textarea.style.position = 'fixed';
+    textarea.style.bottom = '10px';
+    textarea.style.left = '10px';
+    textarea.style.width = '400px';
+    textarea.style.height = '200px';
+    textarea.style.zIndex = 99999;
+    textarea.style.background = '#fff';
+    textarea.style.fontSize = '12px';
+    textarea.style.border = '2px solid #333';
+    textarea.style.padding = '8px';
+    textarea.readOnly = false;
+    document.body.appendChild(textarea);
+}
+
+async function collectZeroGuyLinksPaged(maxPages = 10, maxLinks = 1000, pageDelay = 1000) {
+    let guyLinks = new Set();
+
+    for (let page = 1; page <= maxPages && guyLinks.size < maxLinks && !window.stopZeroCounter; page++) {
+        let url = `https://www.girlsaskguys.com/all-questions?p=${page}`;
+        console.log(`Fetching page ${page}: ${url}`);
+        let resp = await fetch(url, {credentials: "include"});
+        let html = await resp.text();
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, "text/html");
+
+        let questions = Array.from(doc.querySelectorAll('div.question.result-row'));
+        let foundThisPage = 0;
+        for (let q of questions) {
+            let guyA = q.querySelector('a[href*="#guys"]');
+            if (guyA) {
+                let guyCounter = guyA.querySelector('.guycounter');
+                if (guyCounter && guyCounter.textContent.trim() === "0") {
+                    let link = guyA.href.replace(/#guys$/, '');
+                    if (!guyLinks.has(link)) {
+                        guyLinks.add(link);
+                        foundThisPage++;
+                    }
+                }
+            }
+        }
+
+        textarea.value = Array.from(guyLinks).join('\n');
+        console.log(`[${guyLinks.size}] links collected so far... (+${foundThisPage} from page ${page})`);
+        if (foundThisPage === 0) {
+            // If no new links found, you might want to break early
+            // break;
+        }
+        await new Promise(res => setTimeout(res, pageDelay));
+    }
+
+    let result = Array.from(guyLinks).slice(0, maxLinks);
+    window.latestZeroGuyLinks = result;
+    textarea.value = result.join('\n');
+    console.log(`Done! Collected ${result.length} links. You can copy them from the textarea on the page.`);
+    return result;
+}
+
+// Usage example: collectZeroGuyLinksPaged(20, 1000, 1000);
