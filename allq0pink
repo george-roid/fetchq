@@ -1,0 +1,64 @@
+window.stopZeroCounter = false; // Set to true to stop at any time
+
+let textarea = document.getElementById('zeroGirlLinksTextarea');
+if (!textarea) {
+    textarea = document.createElement('textarea');
+    textarea.id = 'zeroGirlLinksTextarea';
+    textarea.style.position = 'fixed';
+    textarea.style.bottom = '10px';
+    textarea.style.left = '10px';
+    textarea.style.width = '400px';
+    textarea.style.height = '200px';
+    textarea.style.zIndex = 99999;
+    textarea.style.background = '#fff';
+    textarea.style.fontSize = '12px';
+    textarea.style.border = '2px solid #333';
+    textarea.style.padding = '8px';
+    textarea.readOnly = false;
+    document.body.appendChild(textarea);
+}
+
+async function collectZeroGirlLinksPaged(maxPages = 10, maxLinks = 1000, pageDelay = 1000) {
+    let girlLinks = new Set();
+
+    for (let page = 1; page <= maxPages && girlLinks.size < maxLinks && !window.stopZeroCounter; page++) {
+        let url = `https://www.girlsaskguys.com/all-questions?p=${page}`;
+        console.log(`Fetching page ${page}: ${url}`);
+        let resp = await fetch(url, {credentials: "include"});
+        let html = await resp.text();
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, "text/html");
+
+        let questions = Array.from(doc.querySelectorAll('div.question.result-row'));
+        let foundThisPage = 0;
+        for (let q of questions) {
+            let girlA = q.querySelector('a[href*="#girls"]');
+            if (girlA) {
+                let girlCounter = girlA.querySelector('.girlcounter');
+                if (girlCounter && girlCounter.textContent.trim() === "0") {
+                    let link = girlA.href.replace(/#girls$/, '');
+                    if (!girlLinks.has(link)) {
+                        girlLinks.add(link);
+                        foundThisPage++;
+                    }
+                }
+            }
+        }
+
+        textarea.value = Array.from(girlLinks).join('\n');
+        console.log(`[${girlLinks.size}] links collected so far... (+${foundThisPage} from page ${page})`);
+        if (foundThisPage === 0) {
+            // If no new links found, you might want to break early
+            // break;
+        }
+        await new Promise(res => setTimeout(res, pageDelay));
+    }
+
+    let result = Array.from(girlLinks).slice(0, maxLinks);
+    window.latestZeroGirlLinks = result;
+    textarea.value = result.join('\n');
+    console.log(`Done! Collected ${result.length} links. You can copy them from the textarea on the page.`);
+    return result;
+}
+
+// Usage example: collectZeroGirlLinksPaged(20, 1000, 1000);
